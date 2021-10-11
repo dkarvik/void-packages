@@ -9,8 +9,11 @@ short_desc="Simple daemon + PAM module providing an XDG_RUNTIME_DIR"
 maintainer="Isaac Freund <ifreund@ifreund.xyz>"
 license="GPL-3.0-or-later"
 homepage="https://github.com/ifreund/rundird"
-distfiles="${homepage}/archive/v${version}.tar.gz"
-checksum=1dea207f39388e8c2c275b8a9aada0166d1f587a806f2e5e4486d98259e23e4c
+_sha="44a33783d50f56002ca90c1d7716b074b5035cdf"
+wrksrc="rundird-${_sha}"
+distfiles="${homepage}/archive/${_sha}.tar.gz"
+nopie=iamlazy
+checksum=adac701b33cb6c44dbfb9b320949f61f04ab65ae4def79279eed4cceb2a819a5
 
 post_install() {
 	vsv rundird

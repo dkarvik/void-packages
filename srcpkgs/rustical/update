@@ -1,0 +1,2 @@
+site="https://github.com/lennart-k/rustical/tags"
+pattern='/archive/refs/tags/v\K[\d.]+(?=\.tar\.gz")'

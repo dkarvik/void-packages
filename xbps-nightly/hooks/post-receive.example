@@ -44,6 +44,6 @@ fi
 
 # Run the build detached so the push doesn't block; log for debugging.
 nohup setsid su -s /bin/sh "$BUILDER" -c \
-	"/opt/void-packages/xbps-nightly/xbps-nightly >> /var/log/xbps-nightly.log 2>&1" \
+	"/var/lib/xbps-builder/void-packages/xbps-nightly/xbps-nightly >> /var/log/xbps-nightly.log 2>&1" \
 	>/dev/null 2>&1 &
 exit 0

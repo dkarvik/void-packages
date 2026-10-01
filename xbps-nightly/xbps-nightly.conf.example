@@ -9,3 +9,8 @@
 
 # Branch to push (defaults to personal).
 #PUSH_BRANCH=personal
+
+# Where `last-head` state lives (default: <checkout>/../state, i.e. the
+# builder data dir sibling of the checkout).  Override if you keep state
+# elsewhere, e.g. a tmpfs.
+#XBPN_STATE=

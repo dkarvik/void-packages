@@ -1,14 +1,15 @@
 #!/bin/sh
 # setup-server.sh - run ON THE SERVER (as root) to bootstrap the xbps-nightly
 # builder.  Assumes:
-#   - this checkout is already cloned to /opt/void-packages on branch personal
+#   - this checkout is already cloned to /var/lib/xbps-builder/void-packages
+#     on branch personal
 #   - cronie (or your cron) installed
 #   - caddy installed (optional, for serving)
 # This should be idempotent; safe to re-run.
 
 set -eu
 
-VPDIR=${VPDIR:-/opt/void-packages}
+VPDIR=${VPDIR:-/var/lib/xbps-builder/void-packages}
 BUILDER=${BUILDER:-xbps-builder}
 BUILDER_HOME=${BUILDER_HOME:-/var/lib/xbps-builder}
 CRON_TIME=${CRON_TIME:-"15 4 * * *"}
@@ -32,7 +33,7 @@ case "$CRONTAB" in
 	*xbps-nightly*) echo "cron already installed" ;;
 	*)
 		(printf '%s\n' "$CRONTAB"
-		 printf '%s /opt/void-packages/xbps-nightly/xbps-nightly >> %s 2>&1\n' \
+		 printf '%s /var/lib/xbps-builder/void-packages/xbps-nightly/xbps-nightly >> %s 2>&1\n' \
 		 	"$CRON_TIME" "$LOGFILE") | crontab -
 		echo "cron added: $CRON_TIME"
 		;;
@@ -45,5 +46,5 @@ echo "done."
 echo
 echo "Optional push-back: if PUSH_REMOTE is set in xbps-nightly.conf the"
 echo "builder force-pushes the rebased branch after each successful run."
-echo "Create /opt/void-packages/xbps-nightly/xbps-nightly.conf like:"
+echo "Create /var/lib/xbps-builder/void-packages/xbps-nightly/xbps-nightly.conf like:"
 echo "  PUSH_REMOTE=fortmonroe"

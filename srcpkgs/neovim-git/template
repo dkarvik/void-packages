@@ -2,6 +2,7 @@
 pkgname=neovim-git
 provides="neovim-${version}_${revision}"
 conflicts="neovim>=0"
+replaces="neovim>=0"
 version=0.12.5.20261001.1
 revision=1
 build_style=cmake

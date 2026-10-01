@@ -80,12 +80,13 @@ if [ -f "$TOOLDIR/xbps-src.conf" ]; then
 fi
 
 # ---- bootstrap ----
-if [ ! -d masterdir ]; then
-	log "binary-bootstrap (first run)"
-	./xbps-src binary-bootstrap || die "binary-bootstrap failed"
-else
+# masterdir naming varies by xbps-src version (masterdir vs masterdir-<arch>)
+if [ -d masterdir ] || [ -d "masterdir-$(xbps-uhelper arch)" ]; then
 	log "bootstrap-update"
 	./xbps-src bootstrap-update || die "bootstrap-update failed"
+else
+	log "binary-bootstrap (first run)"
+	./xbps-src binary-bootstrap || die "binary-bootstrap failed"
 fi
 
 # ---- generators ----

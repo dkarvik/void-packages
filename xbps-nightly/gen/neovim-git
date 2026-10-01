@@ -38,9 +38,11 @@ if [ "$keep" -ne 1 ] || [ "$head_sha" != "$cur_commit" ]; then
 		seq=$((seq + 1))
 		cand="${upver}.${day}.${seq}"
 		if [ -n "$cur_version" ]; then
-			if xbps-uhelper cmpver "$cand" "$cur_version" >/dev/null 2>&1; then
-				version="$cand"   # exit 1 means cand > cur_version
-			fi
+			set +e
+			xbps-uhelper cmpver "$cand" "$cur_version" >/dev/null 2>&1
+			rv=$?
+			set -e
+			if [ "$rv" -eq 1 ]; then version="$cand"; fi   # cmpver exit 1: cand newer
 		else
 			version="$cand"
 		fi

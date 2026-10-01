@@ -102,8 +102,9 @@ done
 [ "$genfail" -eq 0 ] || die "one or more generators failed"
 
 # ---- build ----
+manual=0
 if [ "$#" -gt 0 ]; then
-	set -- "$@"
+	manual=1
 else
 	set -- $(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$TOOLDIR/packages.list")
 fi
@@ -123,7 +124,7 @@ last_head=""
 [ -f "$STATE/last-head" ] && last_head=$(cat "$STATE/last-head")
 
 buildfail=0
-if [ "$#" -gt 0 ] && [ -n "$*" ]; then
+if [ "$manual" -eq 1 ]; then
 	for pkg in "$@"; do
 		log "building $pkg"
 		if ! ./xbps-src pkg "$pkg"; then

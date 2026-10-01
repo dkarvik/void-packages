@@ -43,6 +43,26 @@ PUSH_REMOTE="${PUSH_REMOTE:-}"
 PUSH_BRANCH="${PUSH_BRANCH:-personal}"
 UPSTREAM_REMOTE="${UPSTREAM_REMOTE:-}"
 
+# ---- single-instance lock ----
+# Consecutive triggers (push hook, cron, manual) must not run concurrently:
+# they share the same checkout, masterdir and output repo.  Default is to
+# skip if a run is in progress (a push whose tip arrives mid-build is already
+# superseded by the running build's reset --hard origin/personal).  Set
+# XBPN_WAIT_LOCK=1 to block until the lock clears instead (e.g. for cron).
+LOCKFILE="${XBPN_LOCKFILE:-/var/lib/xbps-builder/xbps-nightly.lock}"
+if command -v flock >/dev/null 2>&1; then
+	if [ "${XBPN_WAIT_LOCK:-0}" = "1" ]; then
+		exec 9>"$LOCKFILE"
+		flock 9 || die "cannot lock $LOCKFILE"
+	else
+		exec 9>"$LOCKFILE"
+		if ! flock -n 9; then
+			log "another xbps-nightly run in progress; skipping this trigger"
+			exit 0
+		fi
+	fi
+fi
+
 # ---- signing keys (keep outside the checkout at $TOOLDIR/../id_rsa) ----
 if [ ! -f "$VPDIR/../id_rsa" ]; then
 	log "generating repository signing key"

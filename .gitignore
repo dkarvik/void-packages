@@ -19,6 +19,9 @@
 !/srcpkgs
 !/xbps-src
 !/xbps-nightly
+!/.gitolite
+/.gitolite/*
+!/.gitolite/post-receive
 etc/conf
 etc/conf.*
 etc/virtual

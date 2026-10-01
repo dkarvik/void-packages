@@ -160,7 +160,13 @@ manual=0
 if [ "$#" -gt 0 ]; then
 	manual=1
 else
-	set -- $(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$TOOLDIR/packages.list")
+	# derive our package set: srcpkgs dirs that differ from the upstream
+	# master we rebased onto (our additive packages).  No packages.list
+	# maintenance needed; the branch is the source of truth.
+	_base="$UPSTREAM_REMOTE/master"
+	[ -n "$UPSTREAM_REMOTE" ] || _base="origin/master"
+	set -- $(git diff --name-only "$_base" HEAD -- srcpkgs/ 2>/dev/null \
+		| sed -n 's|^srcpkgs/\([^/]*\)/.*|\1|p' | sort -u)
 fi
 
 [ "$#" -gt 0 ] || die "no packages selected and packages.list is empty"

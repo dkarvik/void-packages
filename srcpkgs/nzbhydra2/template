@@ -2,7 +2,7 @@
 pkgname=nzbhydra2
 version=9.1.1
 revision=1
-hostmakedepends="apache-maven openjdk17"
+hostmakedepends="apache-maven openjdk17 nodejs"
 #hostmakedepends="apache-maven openjdk17 mandrel"
 depends="openjdk17"
 short_desc="Usenet meta search"

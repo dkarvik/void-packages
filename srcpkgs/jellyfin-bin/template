@@ -2,7 +2,7 @@
 pkgname=jellyfin-bin
 version=12.1
 create_wrksrc=yes
-revision=1
+revision=2
 archs="x86_64"
 #wrksrc="jellyfin"
 #create_wrksrc=yes
@@ -22,7 +22,7 @@ do_install() {
   vcopy . usr/lib/jellyfin
 
   mkdir -p $DESTDIR/usr/bin/
-  ln -s /usr/lib/jellyfin/jellyfin $DESTDIR/usr/bin/jellyfin
+  ln -s /usr/lib/jellyfin/jellyfin/jellyfin $DESTDIR/usr/bin/jellyfin
 
   vsv jellyfin
 }

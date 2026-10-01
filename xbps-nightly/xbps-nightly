@@ -126,7 +126,7 @@ fi
 # Generated packages (neovim-git) commit their own changes; custom packages get
 # manual commits.  Both show up in `git diff` of their srcpkgs/ dir, so a plain
 # diff against the last successfully built HEAD is the change signal.
-STATE="$HOME/.local/xbps-nightly/state"
+STATE="${XBPN_STATE:-$VPDIR/../state}"
 mkdir -p "$STATE"
 last_head=""
 [ -f "$STATE/last-head" ] && last_head=$(cat "$STATE/last-head")

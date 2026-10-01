@@ -1,0 +1,144 @@
+#!/bin/sh
+# xbps-nightly - nightly builder for the "personal" void-packages branch.
+#
+# Lives in <checkout>/xbps-nightly/ inside the same git repository it builds
+# from.  Pipeline:
+#   fetch upstream -> rebase personal onto origin/master -> bootstrap
+#   -> run generators (xbps-nightly/gen/*) -> build selected packages
+#   -> sign branch repository
+#
+# Exit: 0 ok, 1 some package failed, 2 git/repo problem, 3 usage.
+
+set -u
+
+# Tool dir is the directory owning this script; the checkout is its parent.
+cd "$(dirname "$0")" || exit 3
+TOOLDIR="$PWD"
+VPDIR="$(dirname "$TOOLDIR")"
+
+log() { echo "==> $*"; }
+die() { echo "error: $*" >&2; exit 2; }
+
+case "$(basename "$TOOLDIR")" in
+	xbps-nightly) ;;
+	*) die "expected tool dir to be <checkout>/xbps-nightly, got '$TOOLDIR'" ;;
+esac
+
+# ---- signing keys (keep outside the checkout at $TOOLDIR/../id_rsa) ----
+if [ ! -f "$VPDIR/../id_rsa" ]; then
+	log "generating repository signing key"
+	rm -f "$VPDIR/../id_rsa" "$VPDIR/../id_rsa.pub"
+	ssh-keygen -b 4096 -t rsa -m PEM -N "" -f "$VPDIR/../id_rsa"
+fi
+
+# ---- checkout ----
+if [ ! -d "$VPDIR/srcpkgs" ]; then
+	die "no checkout at $VPDIR; clone void-packages here and run this from a checkout on branch 'personal'"
+fi
+
+cd "$VPDIR" || die "cannot enter $VPDIR"
+
+branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
+[ "$branch" = "personal" ] || die "expected branch 'personal', on '$branch'"
+
+log "fetching upstream void-packages"
+git fetch origin || die "git fetch failed"
+
+# ---- our own generated config must not count as dirty state ----
+log "cleaning builder-generated config"
+for f in etc/repos-remote.conf etc/repos-remote-x86_64.conf etc/conf; do
+	rm -f "$f"
+done
+git checkout -- etc/repos-remote.conf 2>/dev/null || true
+
+if [ -n "$(git status --porcelain)" ]; then
+	log "checkout is not clean; refusing to rebase:"
+	git status --short
+	die "please commit or stash local changes in $VPDIR"
+fi
+
+log "rebasing personal onto origin/master"
+if ! git rebase origin/master; then
+	log "rebase failed; resolve conflicts manually, then re-run xbps-nightly"
+	exit 2
+fi
+
+# ---- mirror/repository config overrides (mirrors xbps-mini-builder) ----
+if [ -d /etc/xbps.d ]; then
+	cat /etc/xbps.d/* > etc/repos-remote.conf
+	if [ "$(xbps-uhelper arch)" = "x86_64" ]; then
+		cat /etc/xbps.d/* > etc/repos-remote-x86_64.conf
+	fi
+	if [ -f /etc/xbps.d/00-repository-main.conf ]; then
+		repo="$(sed 's/^.*=//' < /etc/xbps.d/00-repository-main.conf)"
+		printf 'XBPS_INSTALL_ARGS="-r %s -r %s/musl"\n' "$repo" "$repo" > etc/conf
+	fi
+fi
+
+if [ -f "$TOOLDIR/xbps-src.conf" ]; then
+	cat "$TOOLDIR/xbps-src.conf" >> etc/conf
+fi
+
+# ---- bootstrap ----
+if [ ! -d masterdir ]; then
+	log "binary-bootstrap (first run)"
+	./xbps-src binary-bootstrap || die "binary-bootstrap failed"
+else
+	log "bootstrap-update"
+	./xbps-src bootstrap-update || die "bootstrap-update failed"
+fi
+
+# ---- generators ----
+genfail=0
+for gen in "$TOOLDIR"/gen/*; do
+	[ -x "$gen" ] || continue
+	log "running generator $gen"
+	if ! "$gen"; then
+		log "generator $gen failed"
+		genfail=1
+	fi
+done
+[ "$genfail" -eq 0 ] || die "one or more generators failed"
+
+# ---- build ----
+if [ "$#" -gt 0 ]; then
+	set -- "$@"
+else
+	set -- $(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$TOOLDIR/packages.list")
+fi
+
+[ "$#" -gt 0 ] || die "no packages selected and packages.list is empty"
+
+buildfail=0
+for pkg in "$@"; do
+	log "building $pkg"
+	if ! ./xbps-src pkg "$pkg"; then
+		log "build of $pkg FAILED; keeping last good build for it"
+		buildfail=1
+	fi
+done
+
+# ---- sign the branch repository ----
+BINPKGS="$VPDIR/hostdir/binpkgs/personal"
+if [ -d "$BINPKGS" ]; then
+	log "signing repository $BINPKGS"
+	xbps-rindex --sign --signedby "xbps-nightly" --privkey "$VPDIR/../id_rsa" "$BINPKGS"
+	for f in "$BINPKGS"/*.xbps; do
+		[ -e "$f" ] || continue
+		xbps-rindex --sign-pkg --privkey "$VPDIR/../id_rsa" "$f"
+	done
+	find "$BINPKGS" -maxdepth 1 -type d -mindepth 1 | while read -r sub; do
+		log "signing subrepository $sub"
+		xbps-rindex --sign --signedby "xbps-nightly" --privkey "$VPDIR/../id_rsa" "$sub"
+		for f in "$sub"/*.xbps; do [ -e "$f" ] || continue; xbps-rindex --sign-pkg --privkey "$VPDIR/../id_rsa" "$f"; done
+	done
+else
+	log "no branch repository found at $BINPKGS (nothing built?)"
+fi
+
+if [ "$buildfail" -ne 0 ]; then
+	log "some packages failed to build; see logs above"
+	exit 1
+fi
+log "done"
+exit 0

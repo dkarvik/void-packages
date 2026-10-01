@@ -61,6 +61,7 @@ awk -v version="$version" -v sha="$head_sha" -v checksum="$sha" '
 		print "pkgname=neovim-git"
 		print "provides=\"neovim-${version}_${revision}\""
 		print "conflicts=\"neovim>=0\""
+		print "replaces=\"neovim>=0\""
 		next
 	}
 	$0 ~ /^version=/ { print "version=" version; next }

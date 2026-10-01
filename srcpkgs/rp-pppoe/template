@@ -1,0 +1,23 @@
+# Template file for 'rp-pppoe'
+pkgname=rp-pppoe
+version=4.0
+revision=1
+#archs="i686 x86_64"
+build_wrksrc=src
+build_style=gnu-configure
+configure_args="--enable-plugin --sbindir=/usr/bin"
+make_build_args="PLUGIN_DIR=/usr/lib/rp-pppoe"
+make_build_target="all rp-pppoe.so"
+make_install_args="PLUGIN_DIR=/usr/lib/rp-pppoe"
+#conf_files=""
+#make_dirs="/var/log/dir 0755 root root"
+#hostmakedepends=""
+makedepends="ppp-devel"
+depends="ppp net-tools"
+short_desc="Free PPPoE client, relay and server for Linux"
+maintainer="Dominic Monroe <dominic@dominic.io>"
+license="GPL-2.0-or-later"
+homepage="https://dianne.skoll.ca/projects/rp-pppoe/"
+#changelog=""
+distfiles="https://downloads.uls.co.za/rp-pppoe/rp-pppoe-${version}.tar.gz"
+checksum=41ac34e5db4482f7a558780d3b897bdbb21fae3fef4645d2852c3c0c19d81cea

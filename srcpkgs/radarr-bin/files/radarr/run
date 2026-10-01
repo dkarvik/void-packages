@@ -1,0 +1,10 @@
+#!/bin/sh
+
+exec 2>&1
+
+[ -r ./conf ] && . ./conf
+
+: ${USER:=_radarr}
+: ${GROUP:=_radarr}
+
+exec chpst -u ${USER}:${GROUP} Radarr -nobrowser -data=/var/lib/radarr/

@@ -1,0 +1,2 @@
+site="https://repo.jellyfin.org/files/server/linux/stable/"
+pattern='v\K(\d+\.?)+(?=\/)'

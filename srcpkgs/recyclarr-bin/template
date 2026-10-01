@@ -1,0 +1,16 @@
+# Template file for 'recyclarr-bin'
+pkgname=recyclarr-bin
+version=8.7.2
+create_wrksrc=yes
+revision=1
+short_desc="Automatically sync TRaSH Guides to your Sonarr and Radarr instances"
+maintainer="Dominic Monroe <dominic@dominic.io>"
+license="GPL-3.0-or-later"
+homepage="https://recyclarr.dev/"
+distfiles="https://github.com/recyclarr/recyclarr/releases/download/v${version}/recyclarr-linux-x64.tar.xz"
+checksum=ed36515e12483e20761e743f80f21650e26eb175c348c94622dbe1bc2fdb983f
+nostrip=yes
+
+do_install(){
+	vbin recyclarr
+}

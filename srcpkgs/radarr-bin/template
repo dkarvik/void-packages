@@ -1,0 +1,25 @@
+# Template file for 'radarr-bin'
+pkgname=radarr-bin
+version=6.4.4.10685
+create_wrksrc=yes
+revision=1
+short_desc="Movie organizer/manager for usenet and torrent users"
+maintainer="Dominic Monroe <dominic@dominic.io>"
+license="GPL-3.0-or-later"
+homepage="https://radarr.video/"
+distfiles="https://github.com/Radarr/Radarr/releases/download/v${version}/Radarr.master.${version}.linux-core-x64.tar.gz"
+system_accounts="_radarr"
+make_dirs="/var/lib/radarr 0750 _radarr _radarr"
+checksum=a1d726129535e739d4efaf93b5fdd771bb1c78349f55ceac70e365e37b5a12a3
+
+do_install() {
+	mkdir -p $DESTDIR/opt/Radarr
+	# ls -lasd *
+	cp -r * $DESTDIR/opt/Radarr/
+
+	# Add symlink for radarr
+	mkdir -p $DESTDIR/usr/bin/
+	ln -s /opt/Radarr/Radarr $DESTDIR/usr/bin/Radarr
+
+	vsv radarr
+}

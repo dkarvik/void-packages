@@ -1,0 +1,33 @@
+# Template file for 'nzbhydra2'
+pkgname=nzbhydra2
+version=9.1.1
+revision=1
+hostmakedepends="apache-maven openjdk17"
+#hostmakedepends="apache-maven openjdk17 mandrel"
+depends="openjdk17"
+short_desc="Usenet meta search"
+maintainer="Dominic Monroe <dominic@dominic.io>"
+license="Apache-2.0"
+homepage="https://github.com/theotherp/nzbhydra2"
+distfiles="https://github.com/theotherp/nzbhydra2/archive/refs/tags/v${version}.tar.gz"
+checksum=1fff932815cc8ee7abddea55ae2f55f0a356293066970720ae6eaf7a005998d6
+system_accounts="_nzbhydra2"
+make_dirs="/var/lib/nzbhydra2 0750 _nzbhydra2 _nzbhydra2"
+
+do_build() {
+	. /etc/profile.d/jdk.sh
+	mvn -q -pl shared,other,core package -DskipTests
+
+	# native build, WIP, failed on missing -lz after 35 minutes.
+	# export GRAALVM_HOME=/usr/lib/jvm/mandrel21
+	# export PATH=${GRAALVM_HOME}/bin:$PATH
+	# vsed -i -e 's/<requiredVersion>22.3<\/requiredVersion>/<!-- \0 -->/g' core/pom.xml
+	# mvn -pl other,core native:compile -DskipTests
+}
+
+do_install() {
+	vmkdir /usr/lib/nzbhydra2
+	vcopy core/target/core-*-exec.jar /usr/lib/nzbhydra2/core-exec.jar
+	vsv nzbhydra2
+	# vbin core/target/core
+}

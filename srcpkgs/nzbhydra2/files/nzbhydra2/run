@@ -1,0 +1,12 @@
+#!/bin/sh
+
+exec 2>&1
+
+[ -r ./conf ] && . ./conf
+
+: ${USER:=_nzbhydra2}
+: ${GROUP:=_nzbhydra2}
+: ${JVM_OPTS:="-Dsun.security.pkcs11.enable-solaris=false" "-Dfile.encoding=UTF8" -Xmx100M}
+: ${HYDRA_ARGS:=directstart  --datafolder /var/lib/nzbhydra2 --nobrowser}
+
+exec chpst -u ${USER}:${GROUP} /usr/lib/jvm/openjdk17/bin/java $JVM_OPTS -jar /usr/lib/nzbhydra2/core-exec.jar $HYDRA_ARGS $HYDRA_EXTRA_ARGS

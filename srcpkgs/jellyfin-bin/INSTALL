@@ -1,0 +1,8 @@
+case "${ACTION}" in
+post)
+	if [ "$UPDATE" != "yes" ]; then
+		mkdir -vp /var/log/jellyfin /var/cache/jellyfin /etc/jellyfin /var/lib/jellyfin
+		chown -R _jellyfin:_jellyfin /var/log/jellyfin /var/cache/jellyfin /etc/jellyfin /var/lib/jellyfin
+	fi
+	;;
+esac

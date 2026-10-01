@@ -1,0 +1,10 @@
+#!/bin/sh
+
+exec 2>&1
+
+[ -r ./conf ] && . ./conf
+
+: ${USER:=_sonarr}
+: ${GROUP:=_sonarr}
+
+exec chpst -u ${USER}:${GROUP} Sonarr -nobrowser -data=/var/lib/sonarr/

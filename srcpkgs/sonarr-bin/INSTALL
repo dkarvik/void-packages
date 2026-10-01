@@ -1,0 +1,7 @@
+case "${ACTION}" in
+post)
+	if [ "$UPDATE" != "yes" ]; then
+		chown -R _sonarr:_sonarr opt/Sonarr/
+	fi
+	;;
+esac

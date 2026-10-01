@@ -1,0 +1,25 @@
+# Template file for 'sonarr-bin'
+pkgname=sonarr-bin
+version=4.0.20.3014
+create_wrksrc=yes
+revision=1
+short_desc="Smart PVR for newsgroup and bittorrent users"
+maintainer="Dominic Monroe <dominic@dominic.io>"
+license="GPL-3.0-or-later"
+homepage="https://sonarr.tv/"
+distfiles="https://github.com/Sonarr/Sonarr/releases/download/v${version}/Sonarr.main.${version}.linux-x64.tar.gz"
+system_accounts="_sonarr"
+make_dirs="/var/lib/sonarr 0750 _sonarr _sonarr"
+checksum=1fc48544b5a3401b2fc3df8d0642c1e6a73a28e41a351169edd9cd8f54770db5
+
+do_install() {
+	mkdir -p $DESTDIR/opt/Sonarr
+	# ls -lasd *
+	cp -r * $DESTDIR/opt/Sonarr/
+
+	# Add symlink for sonarr
+	mkdir -p $DESTDIR/usr/bin/
+	ln -s /opt/Sonarr/Sonarr $DESTDIR/usr/bin/Sonarr
+
+	vsv sonarr
+}

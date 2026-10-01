@@ -1,0 +1,28 @@
+# Template file for 'jellyfin-bin'
+pkgname=jellyfin-bin
+version=12.1
+create_wrksrc=yes
+revision=1
+archs="x86_64"
+#wrksrc="jellyfin"
+#create_wrksrc=yes
+#build_style=meta
+depends="ffmpeg sqlite icu"
+short_desc="Free Software Media System"
+maintainer="Dominic Monroe <dominic@dominic.io>"
+license="GPL-3.0-or-later"
+homepage="https://jellyfin.org"
+distfiles="https://repo.jellyfin.org/files/server/linux/latest-stable/amd64/jellyfin_${version}-amd64.tar.xz"
+checksum=09e58d1dc3722fb36b5ef0975fe55a65de5c73e8867ef7bbcd7ac81d44e1c59b
+system_accounts="_jellyfin"
+_jellyfin_homedir="/var/lib/jellyfin"
+
+do_install() {
+  vmkdir usr/lib/jellyfin
+  vcopy . usr/lib/jellyfin
+
+  mkdir -p $DESTDIR/usr/bin/
+  ln -s /usr/lib/jellyfin/jellyfin $DESTDIR/usr/bin/jellyfin
+
+  vsv jellyfin
+}

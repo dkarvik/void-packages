@@ -1,0 +1,7 @@
+case "${ACTION}" in
+post)
+	if [ "$UPDATE" != "yes" ]; then
+		chown -R _lidarr:_lidarr opt/Lidarr/
+	fi
+	;;
+esac

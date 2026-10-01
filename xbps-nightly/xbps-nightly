@@ -110,14 +110,56 @@ fi
 
 [ "$#" -gt 0 ] || die "no packages selected and packages.list is empty"
 
+# Only rebuild packages whose srcpkgs/ dir changed since the last successful
+# run, or that have no build in the branch repository.  xbps-src pkg overwrites
+# on every invocation, so unconditional building would redo e.g. maven builds
+# nightly.  Explicit arguments (manual run) always build.
+# Generated packages (neovim-git) commit their own changes; custom packages get
+# manual commits.  Both show up in `git diff` of their srcpkgs/ dir, so a plain
+# diff against the last successfully built HEAD is the change signal.
+STATE="$HOME/.local/xbps-nightly/state"
+mkdir -p "$STATE"
+last_head=""
+[ -f "$STATE/last-head" ] && last_head=$(cat "$STATE/last-head")
+
 buildfail=0
-for pkg in "$@"; do
-	log "building $pkg"
-	if ! ./xbps-src pkg "$pkg"; then
-		log "build of $pkg FAILED; keeping last good build for it"
-		buildfail=1
+if [ "$#" -gt 0 ] && [ -n "$*" ]; then
+	for pkg in "$@"; do
+		log "building $pkg"
+		if ! ./xbps-src pkg "$pkg"; then
+			log "build of $pkg FAILED; keeping last good build for it"
+			buildfail=1
+		fi
+	done
+else
+	changed=""
+	for pkg in "$@"; do
+		needs=1
+		if [ -n "$last_head" ]; then
+			if git diff --quiet "$last_head" HEAD -- "srcpkgs/$pkg" 2>/dev/null; then
+				needs=0
+				if [ -z "$(ls "$VPDIR/hostdir/binpkgs/personal/${pkg}-"*.x86_64.xbps 2>/dev/null)" ]; then
+					needs=1   # no build present, rebuild regardless
+				fi
+			fi
+		fi
+		if [ "$needs" -eq 1 ]; then
+			changed="$changed $pkg"
+		else
+			log "skipping $pkg (unchanged since $last_head)"
+		fi
+	done
+	for pkg in $changed; do
+		log "building $pkg"
+		if ! ./xbps-src pkg "$pkg"; then
+			log "build of $pkg FAILED; keeping last good build for it"
+			buildfail=1
+		fi
+	done
+	if [ "$buildfail" -eq 0 ]; then
+		git rev-parse HEAD > "$STATE/last-head"
 	fi
-done
+fi
 
 # ---- sign the branch repository ----
 BINPKGS="$VPDIR/hostdir/binpkgs/personal"

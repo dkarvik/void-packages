@@ -15,12 +15,12 @@ depends="tree-sitter-c tree-sitter-lua tree-sitter-markdown tree-sitter-query
 short_desc="Fork of Vim aiming to improve user experience, plugins and GUIs"
 maintainer="tranzystorekk <tranzystorek.io@protonmail.com>"
 license="Apache-2.0 AND Vim"
-_commit=ead69d965742a911054615d5e726a56e587ed60c
+_commit=d0596fa4429c0a5e2bd83057cd9e713b5b4587de
 wrksrc="neovim-${_commit}"
 homepage="https://neovim.io"
 changelog="https://github.com/neovim/neovim/releases"
 distfiles="https://github.com/neovim/neovim/archive/${_commit}.tar.gz"
-checksum=b3e53485e1bf6e20b023ca52dd4954d8c83315cccf1c7b4f4bb595b60c16926e
+checksum=5cc5ee180bcec374d08080ab9b5a8b3ec0750788373fb75c398b1fc9fb939a92
 
 build_options="luajit"
 build_options_default="luajit"

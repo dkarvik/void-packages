@@ -2,7 +2,7 @@
 pkgname=radarr-bin
 version=6.4.4.10685
 create_wrksrc=yes
-revision=1
+revision=2
 short_desc="Movie organizer/manager for usenet and torrent users"
 maintainer="Dominic Monroe <dominic@dominic.io>"
 license="GPL-3.0-or-later"
@@ -19,7 +19,7 @@ do_install() {
 
 	# Add symlink for radarr
 	mkdir -p $DESTDIR/usr/bin/
-	ln -s /opt/Radarr/Radarr $DESTDIR/usr/bin/Radarr
+	ln -s /opt/Radarr/Radarr/Radarr $DESTDIR/usr/bin/Radarr
 
 	vsv radarr
 }

@@ -107,10 +107,11 @@ if [ -d /etc/xbps.d ]; then
 	fi
 	if [ -f /etc/xbps.d/00-repository-main.conf ]; then
 		repo="$(sed 's/^.*=//' < /etc/xbps.d/00-repository-main.conf)"
-		# binary-bootstrap needs the bootstrap repo for base-chroot; the
-		# repo fixture has it under /current/bootstrap, but the host's
-		# 00-repository-main.conf does not include it.
-		printf 'XBPS_INSTALL_ARGS="-r %s -r %s/bootstrap -r %s/musl"\n' "$repo" "$repo" "$repo" > etc/conf
+		# binary-bootstrap needs the bootstrap repo for base-chroot, which is
+		# not in the host's 00-repository-main.conf.  Use --repository= (the
+		# -r flag of xbps-install means rootdir, not repository).
+		printf 'XBPS_INSTALL_ARGS="--repository=%s --repository=%s/bootstrap --repository=%s/musl"\n' \
+			"$repo" "$repo" "$repo" > etc/conf
 	fi
 fi
 

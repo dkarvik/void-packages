@@ -138,7 +138,22 @@ if [ -d "$BINPKGS" ]; then
 	mkdir -p etc/repo-keys
 	pub="$VPDIR/../id_rsa.pub.pem"
 	openssl rsa -in "$VPDIR/../id_rsa" -pubout > "$pub" 2>/dev/null
-	fp=$(ssh-keygen -E md5 -lf "$pub" | awk '{print $2}')
+	fp=$(python3 -c '
+import re, hashlib, struct, subprocess, sys
+out = subprocess.run(["openssl","rsa","-in","%s","-text","-noout"],
+    capture_output=True,text=True).stdout
+mhex = "".join(re.findall(r"[0-9a-f]+", re.search(r"modulus:\n(.*?)\npublicExponent", out, re.S).group(1)))
+m = int(mhex,16)
+e = int(re.search(r"publicExponent: (\d+)", out).group(1))
+nb = m.to_bytes((m.bit_length()+7)//8,"big")
+eb = e.to_bytes((e.bit_length()+7)//8,"big")
+def enc(b):
+    if b[0] & 0x80: b = b"\x00"+b
+    return struct.pack(">I",len(b))+b
+blob = b"\x00\x00\x00\x07ssh-rsa" + enc(eb) + enc(nb)
+h = hashlib.md5(blob).hexdigest()
+print(":".join(h[i:i+2] for i in range(0,len(h),2)))
+' "$VPDIR/../id_rsa")
 	plist="etc/repo-keys/${fp}.plist"
 	if [ ! -f "$plist" ]; then
 		size=$(openssl rsa -in "$VPDIR/../id_rsa" -text -noout 2>/dev/null | sed -n 's/^Public-Key: (\([0-9]*\) bit)/\1/p')

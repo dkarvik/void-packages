@@ -184,12 +184,14 @@ last_head=""
 [ -f "$STATE/last-head" ] && last_head=$(cat "$STATE/last-head")
 
 buildfail=0
+failed=""
 if [ "$manual" -eq 1 ]; then
 	for pkg in "$@"; do
 		log "building $pkg"
 		if ! ./xbps-src pkg "$pkg"; then
 			log "build of $pkg FAILED; keeping last good build for it"
 			buildfail=1
+			failed="$failed $pkg"
 		fi
 	done
 else
@@ -197,11 +199,13 @@ else
 	for pkg in "$@"; do
 		needs=1
 		if [ -n "$last_head" ]; then
-			if git diff --quiet "$last_head" HEAD -- "srcpkgs/$pkg" 2>/dev/null; then
+			# rebuild if srcpkgs changed since last build, or a previous
+			# attempt failed (retry regardless of change detection), or the
+			# built package is missing
+			if git diff --quiet "$last_head" HEAD -- "srcpkgs/$pkg" 2>/dev/null \
+				&& ! grep -qx "$pkg" "$STATE/failed" 2>/dev/null \
+				&& [ -n "$(ls "$VPDIR/hostdir/binpkgs/personal/${pkg}-"*.x86_64.xbps 2>/dev/null)" ]; then
 				needs=0
-				if [ -z "$(ls "$VPDIR/hostdir/binpkgs/personal/${pkg}-"*.x86_64.xbps 2>/dev/null)" ]; then
-					needs=1   # no build present, rebuild regardless
-				fi
 			fi
 		fi
 		if [ "$needs" -eq 1 ]; then
@@ -213,13 +217,24 @@ else
 	for pkg in $changed; do
 		log "building $pkg"
 		if ! ./xbps-src pkg "$pkg"; then
-			log "build of $pkg FAILED; keeping last good build for it"
+			log "build of $pkg FAILED; keeping last good build for it; will retry next run"
 			buildfail=1
+			failed="$failed $pkg"
 		fi
 	done
-	if [ "$buildfail" -eq 0 ]; then
-		git rev-parse HEAD > "$STATE/last-head"
-	fi
+fi
+
+# Record failures so the next run retries exactly those (and only those),
+# then advance last-head regardless so one broken package never forces a
+# full rebuild of everything every night.
+if [ "$manual" -eq 1 ]; then
+	:
+elif [ -n "$failed" ]; then
+	printf '%s\n' $failed > "$STATE/failed"
+	git rev-parse HEAD > "$STATE/last-head"
+else
+	rm -f "$STATE/failed"
+	git rev-parse HEAD > "$STATE/last-head"
 fi
 
 # ---- sign the branch repository ----
@@ -282,7 +297,7 @@ fi
 # generator may have committed package updates.  Push it back to a gitolite/
 # mirror remote so the server copy stays the canonical one.  The rebase
 # rewrote history, so force-push is required; guarded by --force-with-lease.
-if [ "$buildfail" -eq 0 ] && [ -n "$PUSH_REMOTE" ]; then
+if [ -n "$PUSH_REMOTE" ]; then
 	if git remote | grep -qx "$PUSH_REMOTE"; then
 		# lease is only valid against a current tracking ref; fetch first
 		git fetch "$PUSH_REMOTE" "$PUSH_BRANCH" >/dev/null 2>&1 || true
@@ -300,7 +315,7 @@ if [ "$buildfail" -eq 0 ] && [ -n "$PUSH_REMOTE" ]; then
 fi
 
 if [ "$buildfail" -ne 0 ]; then
-	log "some packages failed to build; see logs above"
+	log "one or more packages failed to build; see logs above.  State advanced; failures will be retried."
 	exit 1
 fi
 log "done"

@@ -1,0 +1,34 @@
+#!/bin/sh
+# repo-local post-receive trigger for void-packages.
+#
+# Executed by the gitolite GLOBAL dispatcher (hooks/gitolite-post-receive)
+# for every push to this repo.  Only acts on pushes to refs/heads/personal.
+# Escalates to xbps-builder via a sudoers rule pinned to the exact builder
+# script, then detaches.
+#
+# Reuse recipe for other repos: copy this file to .gitolite/post-receive at
+# the repo root, adjust REF/TARGET/CMD below, commit, done.
+
+set -u
+
+# Which branch triggers the build, and who/what to run.
+REF="refs/heads/personal"
+BUILDER=xbps-builder
+BUILDER_CMD="/var/lib/xbps-builder/void-packages/xbps-nightly/xbps-nightly"
+
+[ "${GIT_REF:-}" = "$REF" ] || exit 0
+
+# Don't trigger on the builder's own force-push echoing back after a build:
+# the pushed newrev then equals the last recorded built HEAD.
+[ -f /var/lib/xbps-builder/state/last-head ] && \
+	[ "$(cat /var/lib/xbps-builder/state/last-head 2>/dev/null)" = "${GIT_NEWREV:-}" ] && {
+	echo "xbps-nightly: push back of built HEAD, skipping rebuild"
+	exit 0
+}
+
+# Detach so the push returns immediately; sudo -n matches the sudoers rule.
+# Pipe both streams to logger(1): gitolite cannot write /var/log directly,
+# and the sudoers rule pins the exact command so we cannot redirect inside.
+nohup setsid sudo -n -u "$BUILDER" "$BUILDER_CMD" 2>&1 \
+	| logger -t xbps-nightly &
+exit 0

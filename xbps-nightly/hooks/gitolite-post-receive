@@ -1,0 +1,55 @@
+#!/bin/sh
+# gitolite GLOBAL post-receive dispatcher.
+#
+# Runs for every repo on the gitolite host.  If the pushed ref contains a
+# committed script at `.gitolite/post-receive`, extract it from the new tip
+# and execute it (foreground; the repo-local script is expected to detach
+# anything long-running, e.g. via setsid/sudo).
+#
+# This gives repo-local triggers without touching gitolite conf per repo:
+# just commit `.gitolite/post-receive` in any repo and it runs on push.
+#
+# Env provided by gitolite: GL_REPO, GL_USER.
+# Stdin (one line per ref): <oldrev> <newrev> <refname>
+#
+# Install: put this file in gitolite's hooks/common (LOCAL_CODE) or drop it
+# into the admin repo as hooks/common/post-receive, then run
+#   gitolite setup --hooks-only
+#
+# SECURITY: this executes code from pushed commits as the gitolite user.
+# Only give push access to repos/keys you trust.  The sudoers rule for the
+# build is pinned to one exact command, so a malicious repo script cannot
+# escalate beyond the configured build trigger.
+
+set -u
+
+while read -r oldrev newrev ref; do
+	[ -n "$ref" ] || continue
+	[ -n "$newrev" ] && [ "$newrev" != "0000000000000000000000000000000000000000" ] || continue
+	case "$ref" in
+		refs/heads/*) ;;
+		*) continue ;;
+	esac
+
+	# does the new tip carry a trigger script?
+	if ! git cat-file -e "$newrev:.gitolite/post-receive" 2>/dev/null; then
+		continue
+	fi
+
+	work=$(mktemp -d) || continue
+	if git archive --format=tar "$newrev" .gitolite/post-receive 2>/dev/null \
+		| tar -x -C "$work" 2>/dev/null; then
+		script="$work/.gitolite/post-receive"
+		if [ -s "$script" ]; then
+			chmod +x "$script"
+			GL_REPO="${GL_REPO:-}" \
+			GL_USER="${GL_USER:-}" \
+			GIT_OLDREV="$oldrev" \
+			GIT_NEWREV="$newrev" \
+			GIT_REF="$ref" \
+				"$script"
+		fi
+	fi
+	rm -rf "$work"
+done
+exit 0

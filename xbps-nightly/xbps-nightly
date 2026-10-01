@@ -140,7 +140,7 @@ if [ -d "$BINPKGS" ]; then
 	openssl rsa -in "$VPDIR/../id_rsa" -pubout > "$pub" 2>/dev/null
 	fp=$(python3 -c '
 import re, hashlib, struct, subprocess, sys
-out = subprocess.run(["openssl","rsa","-in","%s","-text","-noout"],
+out = subprocess.run(["openssl","rsa","-in",sys.argv[1],"-text","-noout"],
     capture_output=True,text=True).stdout
 mhex = "".join(re.findall(r"[0-9a-f]+", re.search(r"modulus:\n(.*?)\npublicExponent", out, re.S).group(1)))
 m = int(mhex,16)

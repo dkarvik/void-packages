@@ -1,0 +1,11 @@
+#!/bin/sh
+# xbps-nightly.conf - optional settings for xbps-nightly
+# Sourced by the builder.  Safe to leave empty; set PUSH_REMOTE if you want
+# the rebased branch pushed back to a remote after each successful run.
+
+# Remote to push the rebuilt `personal` branch back to after a build.
+# Run `git remote add <name> <url>` in the checkout first, then set here.
+#PUSH_REMOTE=fortmonroe
+
+# Branch to push (defaults to personal).
+#PUSH_BRANCH=personal

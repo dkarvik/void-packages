@@ -24,6 +24,14 @@ case "$(basename "$TOOLDIR")" in
 	*) die "expected tool dir to be <checkout>/xbps-nightly, got '$TOOLDIR'" ;;
 esac
 
+# ---- optional settings (xbps-nightly.conf, sourced) ----
+#   PUSH_REMOTE=fortmonroe        push the rebuilt `personal` branch back
+#   PUSH_BRANCH=personal          branch to push (default: current)
+CONF="$TOOLDIR/xbps-nightly.conf"
+[ -f "$CONF" ] && . "$CONF"
+PUSH_REMOTE="${PUSH_REMOTE:-}"
+PUSH_BRANCH="${PUSH_BRANCH:-personal}"
+
 # ---- signing keys (keep outside the checkout at $TOOLDIR/../id_rsa) ----
 if [ ! -f "$VPDIR/../id_rsa" ]; then
 	log "generating repository signing key"
@@ -215,6 +223,27 @@ print(":".join(h[i:i+2] for i in range(0,len(h),2)))
 	fi
 else
 	log "no branch repository found at $BINPKGS (nothing built?)"
+fi
+
+# ---- push the rebuilt branch back up (optional) ----
+# After a successful run, `personal` was rebased onto origin/master and the
+# generator may have committed package updates.  Push it back to a gitolite/
+# mirror remote so the server copy stays the canonical one.  The rebase
+# rewrote history, so force-push is required; guarded by --force-with-lease.
+if [ "$buildfail" -eq 0 ] && [ -n "$PUSH_REMOTE" ]; then
+	if git remote | grep -qx "$PUSH_REMOTE"; then
+		# lease is only valid against a current tracking ref; fetch first
+		git fetch "$PUSH_REMOTE" "$PUSH_BRANCH" >/dev/null 2>&1 || true
+		if git push --force-with-lease="$PUSH_REMOTE/$PUSH_BRANCH" "$PUSH_REMOTE" "HEAD:$PUSH_BRANCH"; then
+			log "pushed $PUSH_BRANCH -> $PUSH_REMOTE"
+		else
+			log "WARNING: push to $PUSH_REMOTE failed; run manually:"
+			log "  git push --force-with-lease=$PUSH_REMOTE/$PUSH_BRANCH $PUSH_REMOTE HEAD:$PUSH_BRANCH"
+			buildfail=1
+		fi
+	else
+		log "WARNING: PUSH_REMOTE '$PUSH_REMOTE' is not a configured remote; skipping push"
+	fi
 fi
 
 if [ "$buildfail" -ne 0 ]; then

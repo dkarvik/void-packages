@@ -1,0 +1,49 @@
+#!/bin/sh
+# gitolite post-receive hook for the void-packages repo.
+#
+# Installed on the server at:
+#   ~gitolite/repositories/void-packages.git/hooks/post-receive
+# (gitolite normally disables arbitrary per-repo hooks; enable via
+#  "local code" hooks: put this in gitolite's ~/.gitolite/hooks/common/
+#  and run `gitolite setup --hooks-only`, or use `repo` config
+#  `config gitolite-options.hooks` if your version supports it.)
+#
+# Trigger: when `personal` is updated, run the nightly builder as the
+# xbps-builder user, UNLESS the push came from the builder itself pushing
+# the branch back (that would loop forever).
+#
+# The builder's deploy key must exist in gitolite as its own user, e.g.
+#   @gitolite = xbps-broker
+# and the builder pushes with that key.  gitolite sets GL_USER for us.
+
+set -u
+
+BUILDER=xbps-builder               # local user that runs the build
+BUILDER_GITUSER="${BUILDER_GITUSER:-xbps-broker}"  # gitolite user for the builder's push key
+
+same_ref() {
+	case "$1" in
+		refs/heads/personal) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+trigger=""
+if [ -n "${GL_REF-}" ]; then
+	same_ref "$GL_REF" && trigger=1
+else
+	while read -r _old _new ref; do
+		same_ref "$ref" && trigger=1
+	done
+fi
+
+[ -n "$trigger" ] || exit 0
+
+# skip pushes that are the builder reflecting our own build back up
+[ -n "${GL_USER-}" ] && [ "$GL_USER" = "$BUILDER_GITUSER" ] && exit 0
+
+# Run the build detached so the push doesn't block; log for debugging.
+nohup setsid su -s /bin/sh "$BUILDER" -c \
+	"/opt/void-packages/xbps-nightly/xbps-nightly >> /var/log/xbps-nightly.log 2>&1" \
+	>/dev/null 2>&1 &
+exit 0

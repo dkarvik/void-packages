@@ -26,9 +26,12 @@ BUILDER_CMD="/var/lib/xbps-builder/void-packages/xbps-nightly/xbps-nightly"
 	exit 0
 }
 
-# Detach so the push returns immediately; sudo -n matches the sudoers rule.
-# Pipe both streams to logger(1): gitolite cannot write /var/log directly,
-# and the sudoers rule pins the exact command so we cannot redirect inside.
-nohup setsid sudo -n -u "$BUILDER" "$BUILDER_CMD" 2>&1 \
-	| logger -t xbps-nightly &
+# Detach fully so the push returns immediately: the builder must not hold
+# git's stdout/stderr pipe open (or the push blocks until the build ends).
+# sudo -n matches the sudoers rule.  Redirect the job's fds to /dev/null;
+# logger(1) still reaches syslog via its own socket.
+{
+	nohup setsid sudo -n -u "$BUILDER" "$BUILDER_CMD" 2>&1 \
+		| logger -t xbps-nightly
+} </dev/null >/dev/null 2>&1 &
 exit 0

@@ -1,0 +1,29 @@
+# Template file for 'rimgo'
+pkgname=rimgo
+version=1.4.2
+revision=1
+build_style=go
+go_import_path=codeberg.org/rimgo/rimgo
+hostmakedepends="pnpm"
+makedepends=""
+depends=""
+short_desc="An alternative frontend for Imgur."
+maintainer="Dominic Monroe <dominic@dominic.io>"
+license="AGPL-3.0-only"
+homepage="https://rimgo.codeberg.page/"
+distfiles="https://codeberg.org/rimgo/rimgo/archive/v${version}.tar.gz"
+checksum=6834d252e7c9c63e313c29e0a4d411d5c201fbb539186619e1995462bcae658b
+
+pre_build() {
+	cat > pnpm-workspace.yaml <<'EOF'
+allowBuilds:
+  '@parcel/watcher': false
+EOF
+
+	pnpm install
+	pnpm run build
+}
+
+post_install() {
+	vsv rimgo
+}

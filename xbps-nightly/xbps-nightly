@@ -27,10 +27,18 @@ esac
 # ---- optional settings (xbps-nightly.conf, sourced) ----
 #   PUSH_REMOTE=fortmonroe        push the rebuilt `personal` branch back
 #   PUSH_BRANCH=personal          branch to push (default: current)
+#   UPSTREAM_REMOTE=upstream      remote with Void's `master` to rebase onto
+#                                 (e.g. github.com/void-linux/void-packages).
+#                                 When set, origin is treated as the canonical
+#                                 `personal` home (gitolite) and the working
+#                                 branch is reset to origin/PUSH_BRANCH before
+#                                 rebasing.  Unset = original behaviour
+#                                 (fetch origin, rebase origin/master).
 CONF="$TOOLDIR/xbps-nightly.conf"
 [ -f "$CONF" ] && . "$CONF"
 PUSH_REMOTE="${PUSH_REMOTE:-}"
 PUSH_BRANCH="${PUSH_BRANCH:-personal}"
+UPSTREAM_REMOTE="${UPSTREAM_REMOTE:-}"
 
 # ---- signing keys (keep outside the checkout at $TOOLDIR/../id_rsa) ----
 if [ ! -f "$VPDIR/../id_rsa" ]; then
@@ -50,7 +58,12 @@ branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
 [ "$branch" = "personal" ] || die "expected branch 'personal', on '$branch'"
 
 log "fetching upstream void-packages"
-git fetch origin || die "git fetch failed"
+if [ -n "$UPSTREAM_REMOTE" ]; then
+	git fetch origin || die "git fetch (origin) failed"
+	git fetch "$UPSTREAM_REMOTE" || die "git fetch ($UPSTREAM_REMOTE) failed"
+else
+	git fetch origin || die "git fetch failed"
+fi
 
 # ---- our own generated config must not count as dirty state ----
 log "cleaning builder-generated config"
@@ -65,10 +78,22 @@ if [ -n "$(git status --porcelain)" ]; then
 	die "please commit or stash local changes in $VPDIR"
 fi
 
-log "rebasing personal onto origin/master"
-if ! git rebase origin/master; then
-	log "rebase failed; resolve conflicts manually, then re-run xbps-nightly"
-	exit 2
+if [ -n "$UPSTREAM_REMOTE" ]; then
+	# origin is the canonical `personal` home (gitolite): adopt the pushed
+	# tip, then move onto Void's upstream master.
+	log "adopting origin/$PUSH_BRANCH"
+	git reset --hard "origin/$PUSH_BRANCH" || die "reset to origin/$PUSH_BRANCH failed"
+	log "rebasing $PUSH_BRANCH onto $UPSTREAM_REMOTE/master"
+	if ! git rebase "$UPSTREAM_REMOTE/master"; then
+		log "rebase failed; resolve conflicts manually, then re-run xbps-nightly"
+		exit 2
+	fi
+else
+	log "rebasing personal onto origin/master"
+	if ! git rebase origin/master; then
+		log "rebase failed; resolve conflicts manually, then re-run xbps-nightly"
+		exit 2
+	fi
 fi
 
 # ---- mirror/repository config overrides (mirrors xbps-mini-builder) ----

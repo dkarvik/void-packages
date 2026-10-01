@@ -1,7 +1,7 @@
 # Template file for 'rimgo'
 pkgname=rimgo
 version=1.4.2
-revision=1
+revision=2
 build_style=go
 go_import_path=codeberg.org/rimgo/rimgo
 hostmakedepends="pnpm"
@@ -12,7 +12,7 @@ maintainer="Dominic Monroe <dominic@dominic.io>"
 license="AGPL-3.0-only"
 homepage="https://rimgo.codeberg.page/"
 distfiles="https://codeberg.org/rimgo/rimgo/archive/v${version}.tar.gz"
-checksum=6834d252e7c9c63e313c29e0a4d411d5c201fbb539186619e1995462bcae658b
+checksum=bae767d447a0a38a19e401edf4bd1273cc9329a348a19e7d56d8a41b28ffda1f
 
 pre_build() {
 	cat > pnpm-workspace.yaml <<'EOF'

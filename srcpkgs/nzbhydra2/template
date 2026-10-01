@@ -16,13 +16,7 @@ make_dirs="/var/lib/nzbhydra2 0750 _nzbhydra2 _nzbhydra2"
 
 do_build() {
 	. /etc/profile.d/jdk.sh
-	mvn -q -pl shared,other,core package -DskipTests
-
-	# native build, WIP, failed on missing -lz after 35 minutes.
-	# export GRAALVM_HOME=/usr/lib/jvm/mandrel21
-	# export PATH=${GRAALVM_HOME}/bin:$PATH
-	# vsed -i -e 's/<requiredVersion>22.3<\/requiredVersion>/<!-- \0 -->/g' core/pom.xml
-	# mvn -pl other,core native:compile -DskipTests
+	mvn -q -pl core -am package -DskipTests
 }
 
 do_install() {

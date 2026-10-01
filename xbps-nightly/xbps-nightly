@@ -57,8 +57,21 @@ fi
 
 cd "$VPDIR" || die "cannot enter $VPDIR"
 
+# A crashed/stopped rebase from a previous run leaves us detached mid-rebase;
+# recover deterministically instead of building from a broken tree.
+if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
+	log "stale rebase in progress; aborting"
+	git rebase --abort >/dev/null 2>&1 || git am --abort >/dev/null 2>&1 || true
+fi
+
 branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
 [ "$branch" = "personal" ] || die "expected branch 'personal', on '$branch'"
+
+# The builder commits (generator output) - needs a stable git identity.
+if ! git config user.email >/dev/null 2>&1; then
+	git config user.email "xbps-builder@deoch"
+	git config user.name "xbps-builder"
+fi
 
 log "fetching upstream void-packages"
 if [ -n "$UPSTREAM_REMOTE" ]; then
@@ -87,7 +100,8 @@ if [ -n "$UPSTREAM_REMOTE" ]; then
 	log "adopting origin/$PUSH_BRANCH"
 	git reset --hard "origin/$PUSH_BRANCH" || die "reset to origin/$PUSH_BRANCH failed"
 	log "rebasing $PUSH_BRANCH onto $UPSTREAM_REMOTE/master"
-	if ! git rebase "$UPSTREAM_REMOTE/master"; then
+	# our branch is additive (custom packages); on conflict prefer ours
+	if ! git rebase --strategy-option=ours "$UPSTREAM_REMOTE/master"; then
 		log "rebase failed; resolve conflicts manually, then re-run xbps-nightly"
 		exit 2
 	fi

@@ -18,6 +18,7 @@
 !/etc
 !/srcpkgs
 !/xbps-src
+!/xbps-nightly
 etc/conf
 etc/conf.*
 etc/virtual

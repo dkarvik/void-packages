@@ -1,0 +1,81 @@
+#!/bin/sh
+# xbps-nightly/gen/neovim-git - regenerate srcpkgs/neovim-git in the checkout.
+#
+# Refreshes from the CURRENT srcpkgs/neovim template so upstream recipe
+# changes propagate, but keeps version/_commit/checksum stable unless neovim
+# master HEAD or its release version moved.  The generated template itself is
+# the journal (it lives on the same git branch).
+#
+# version: <upstream version>.<YYYYMMDD>.<seq>  (cmpver .YYYYMMDD.1 > release)
+
+set -eu
+
+GEN_DIR="$(cd "$(dirname "$0")" && pwd)"
+VPDIR="$(dirname "$(dirname "$GEN_DIR")")"
+cd "$VPDIR"
+
+src=srcpkgs/neovim
+dst=srcpkgs/neovim-git
+upver=$(sed -n 's/^version=//p' "$src/template")
+head_sha=$(git ls-remote https://github.com/neovim/neovim.git refs/heads/master | awk '{print $1}')
+[ -n "$head_sha" ] || { echo "error: no head for neovim master" >&2; exit 1; }
+
+# previous state lives in the generated template
+cur_version=$(sed -n 's/^version=//p' "$dst/template" 2>/dev/null || true)
+cur_commit=$(sed -n 's/^_commit=//p' "$dst/template" 2>/dev/null || true)
+
+# keep current version unless head moved or upstream base version changed
+case "${cur_version}" in
+	"${upver}"|"${upver}."*) keep=1 ;;
+	*) keep=0 ;;
+esac
+version="$cur_version"
+if [ "$keep" -ne 1 ] || [ "$head_sha" != "$cur_commit" ]; then
+	day=$(date -u +%Y%m%d)
+	seq=0
+	version=""
+	while [ -z "$version" ]; do
+		seq=$((seq + 1))
+		cand="${upver}.${day}.${seq}"
+		if [ -n "$cur_version" ]; then
+			if xbps-uhelper cmpver "$cand" "$cur_version" >/dev/null 2>&1; then
+				version="$cand"   # exit 1 means cand > cur_version
+			fi
+		else
+			version="$cand"
+		fi
+	done
+fi
+
+# fresh copy from upstream; drop patches (may not apply to moving HEAD) and
+# release-tag update file (we do not want update-check to chase tags)
+rm -rf "$dst" && mkdir -p "$dst"
+printf 'disabled="neovim-git tracks master HEAD; regenerated nightly by xbps-nightly"\n' > "$dst/update"
+
+sha=$(curl -sSL "https://github.com/neovim/neovim/archive/${head_sha}.tar.gz" | sha256sum | awk '{print $1}')
+
+awk -v version="$version" -v sha="$head_sha" -v checksum="$sha" '
+	$0 ~ /^pkgname=neovim$/ {
+		print "pkgname=neovim-git"
+		print "provides=\"neovim-${version}_${revision}\""
+		print "conflicts=\"neovim>=0\""
+		next
+	}
+	$0 ~ /^version=/ { print "version=" version; next }
+	$0 ~ /^revision=/ { print "revision=1"; next }
+	$0 ~ /^_commit=/ { next }
+	$0 ~ /^distfiles=/ { print "distfiles=\"https://github.com/neovim/neovim/archive/${_commit}.tar.gz\""; next }
+	$0 ~ /^checksum=/ { print "checksum=" checksum; next }
+	$0 ~ /^homepage=/ { print "_commit=" sha; print "wrksrc=\"neovim-${_commit}\"" }
+	{ print }
+' "$src/template" > "$dst/template"
+
+if [ -n "$(git status --porcelain -- "$dst")" ]; then
+	git add "$dst"
+	git commit -m "neovim-git: update to ${version} ($(printf '%s' "$head_sha" | cut -c1-8))" -- "$dst" >/dev/null
+	echo "neovim-git: updated to ${version} (${head_sha})"
+else
+	echo "neovim-git: unchanged at ${version} (${head_sha})"
+fi
+
+./xbps-src show neovim-git >/dev/null || { echo "error: template does not parse" >&2; exit 1; }

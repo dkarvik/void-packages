@@ -1,0 +1,9 @@
+# Packages built nightly by xbps-nightly, one per line.
+neovim-git
+jellyfin-bin
+lidarr-bin
+nzbhydra2
+radarr-bin
+recyclarr-bin
+rp-pppoe
+sonarr-bin

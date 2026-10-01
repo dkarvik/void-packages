@@ -133,6 +133,28 @@ if [ -d "$BINPKGS" ]; then
 		xbps-rindex --sign --signedby "xbps-nightly" --privkey "$VPDIR/../id_rsa" "$sub"
 		for f in "$sub"/*.xbps; do [ -e "$f" ] || continue; xbps-rindex --sign-pkg --privkey "$VPDIR/../id_rsa" "$f"; done
 	done
+
+	# Trust our own key so chroot builds never prompt to import it.
+	mkdir -p etc/repo-keys
+	pub="$VPDIR/../id_rsa.pub.pem"
+	openssl rsa -in "$VPDIR/../id_rsa" -pubout > "$pub" 2>/dev/null
+	fp=$(ssh-keygen -E md5 -lf "$pub" | awk '{print $2}')
+	plist="etc/repo-keys/${fp}.plist"
+	if [ ! -f "$plist" ]; then
+		size=$(openssl rsa -in "$VPDIR/../id_rsa" -text -noout 2>/dev/null | sed -n 's/^Public-Key: (\([0-9]*\) bit)/\1/p')
+		{
+			printf '<?xml version="1.0" encoding="UTF-8"?>\n'
+			printf '<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
+			printf '<plist version="1.0">\n<dict>\n'
+			printf '\t<key>public-key</key>\n\t<data>'
+			base64 -w0 "$pub"
+			printf '</data>\n'
+			printf '\t<key>public-key-size</key>\n\t<integer>%s</integer>\n' "$size"
+			printf '\t<key>signature-by</key>\n\t<string>xbps-nightly</string>\n'
+			printf '</dict>\n</plist>\n'
+		} > "$plist"
+		log "wrote repo key plist for chroot trust: $plist"
+	fi
 else
 	log "no branch repository found at $BINPKGS (nothing built?)"
 fi

@@ -2,7 +2,7 @@
 pkgname=sonarr-bin
 version=4.0.20.3014
 create_wrksrc=yes
-revision=1
+revision=2
 short_desc="Smart PVR for newsgroup and bittorrent users"
 maintainer="Dominic Monroe <dominic@dominic.io>"
 license="GPL-3.0-or-later"
@@ -19,7 +19,7 @@ do_install() {
 
 	# Add symlink for sonarr
 	mkdir -p $DESTDIR/usr/bin/
-	ln -s /opt/Sonarr/Sonarr $DESTDIR/usr/bin/Sonarr
+	ln -s /opt/Sonarr/Sonarr/Sonarr $DESTDIR/usr/bin/Sonarr
 
 	vsv sonarr
 }

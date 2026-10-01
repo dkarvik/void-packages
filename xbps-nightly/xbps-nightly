@@ -280,11 +280,12 @@ if [ "$buildfail" -eq 0 ] && [ -n "$PUSH_REMOTE" ]; then
 	if git remote | grep -qx "$PUSH_REMOTE"; then
 		# lease is only valid against a current tracking ref; fetch first
 		git fetch "$PUSH_REMOTE" "$PUSH_BRANCH" >/dev/null 2>&1 || true
-		if git push --force-with-lease="$PUSH_REMOTE/$PUSH_BRANCH" "$PUSH_REMOTE" "HEAD:$PUSH_BRANCH"; then
+		# push a HEAD:branch with force-with-lease=<localref>:<expected tracking ref>
+		if git push --force-with-lease="$PUSH_BRANCH:$PUSH_REMOTE/$PUSH_BRANCH" "$PUSH_REMOTE" "HEAD:$PUSH_BRANCH"; then
 			log "pushed $PUSH_BRANCH -> $PUSH_REMOTE"
 		else
 			log "WARNING: push to $PUSH_REMOTE failed; run manually:"
-			log "  git push --force-with-lease=$PUSH_REMOTE/$PUSH_BRANCH $PUSH_REMOTE HEAD:$PUSH_BRANCH"
+			log "  git push --force-with-lease=$PUSH_BRANCH:$PUSH_REMOTE/$PUSH_BRANCH $PUSH_REMOTE HEAD:$PUSH_BRANCH"
 			buildfail=1
 		fi
 	else

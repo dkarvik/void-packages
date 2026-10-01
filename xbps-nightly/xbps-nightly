@@ -34,8 +34,11 @@ esac
 #                                 branch is reset to origin/PUSH_BRANCH before
 #                                 rebasing.  Unset = original behaviour
 #                                 (fetch origin, rebase origin/master).
-CONF="$TOOLDIR/xbps-nightly.conf"
+CONF="$VPDIR/../xbps-nightly.conf"
 [ -f "$CONF" ] && . "$CONF"
+# legacy/optional: conf inside the tool dir (untracked or committed)
+CONF2="$TOOLDIR/xbps-nightly.conf"
+[ -f "$CONF2" ] && . "$CONF2"
 PUSH_REMOTE="${PUSH_REMOTE:-}"
 PUSH_BRANCH="${PUSH_BRANCH:-personal}"
 UPSTREAM_REMOTE="${UPSTREAM_REMOTE:-}"

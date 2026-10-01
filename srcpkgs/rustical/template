@@ -1,7 +1,7 @@
 # Template file for 'rustical'
 pkgname=rustical
 version=0.16.4
-revision=1
+revision=2
 build_style=cargo
 hostmakedepends="pkg-config"
 makedepends="sqlite-devel"
@@ -12,7 +12,11 @@ homepage="https://lennart-k.github.io/rustical/"
 changelog="https://github.com/lennart-k/rustical/releases"
 distfiles="https://github.com/lennart-k/rustical/archive/refs/tags/v${version}.tar.gz"
 checksum=06531f89203991b693e23723868b32cd798be1cbaa6c0fe0fda0c215c9d949e7
+system_accounts="_rustical"
+make_dirs="/var/lib/rustical 0750 _rustical _rustical"
 
 post_install() {
 	vlicense LICENSE
+	vinstall ${FILESDIR}/config.toml 644 etc/rustical
+	vsv rustical
 }

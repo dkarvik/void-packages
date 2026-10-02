@@ -21,19 +21,19 @@ mkdir -p "$BUILDER_HOME" && chown "$BUILDER:" "$BUILDER_HOME"
 chown -R "$BUILDER:" "$VPDIR"
 
 echo "==> build dependencies on the host"
-xbps-install -Sy git xz curl ca-certificates util-linux bsdtar binutils cronie 2>/dev/null || true
+xbps-install -Sy git xz curl ca-certificates util-linux bsdtar binutils cronie nq 2>/dev/null || true
 
 echo "==> first build (bootstrap + build + sign). This takes a while."
 su -s /bin/sh "$BUILDER" -c "$VPDIR/xbps-nightly/xbps-nightly" \
 	>>"$LOGFILE" 2>&1 || echo "first build returned non-zero (see $LOGFILE)"
 
-echo "==> install cron"
+echo "==> install cron (enqueues via nq; jobs serialize with push triggers)"
 CRONTAB=$(crontab -l 2>/dev/null || true)
 case "$CRONTAB" in
 	*xbps-nightly*) echo "cron already installed" ;;
 	*)
 		(printf '%s\n' "$CRONTAB"
-		 printf '%s /var/lib/xbps-builder/void-packages/xbps-nightly/xbps-nightly >> %s 2>&1\n' \
+		 printf '%s NQDIR=/var/lib/xbps-builder/nq /usr/bin/nq /var/lib/xbps-builder/void-packages/xbps-nightly/nq-job.sh >> %s 2>&1\n' \
 		 	"$CRON_TIME" "$LOGFILE") | crontab -
 		echo "cron added: $CRON_TIME"
 		;;

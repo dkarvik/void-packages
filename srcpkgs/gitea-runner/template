@@ -1,0 +1,35 @@
+# Template file for 'gitea-runner'
+pkgname=gitea-runner
+version=4.1.0
+revision=1
+build_style=go
+go_import_path=gitea.com/gitea/runner
+make_check=no
+short_desc="Official runner for Gitea Actions"
+maintainer="Dominic Karvik <dominic@dominic.io>"
+license="MIT"
+homepage="https://gitea.com/gitea/runner"
+changelog="https://gitea.com/gitea/runner/releases"
+distfiles="https://gitea.com/gitea/runner/archive/v${version}.tar.gz"
+checksum=266eb11b93d3378749be3c0c0860ed9de077c5dcd83441987646c6049b6ad4b1
+
+# host-execution jobs need these on the runner host
+depends="git nodejs openssh rsync"
+
+# system account; underscore, not hyphen — the accounts hook evals
+# ${account}_homedir and a hyphen would break that
+system_accounts="_gitea_runner"
+_gitea_runner_homedir="/var/lib/gitea_runner"
+_gitea_runner_shell="/usr/sbin/nologin"
+_gitea_runner_descr="Gitea Actions runner"
+make_dirs="/var/lib/gitea_runner 0755 _gitea_runner _gitea_runner"
+
+conf_files="/etc/gitea-runner/config.yaml"
+
+post_install() {
+	# go install names the binary after the module's last path element
+	mv "${DESTDIR}"/usr/bin/runner "${DESTDIR}"/usr/bin/gitea-runner
+	vlicense LICENSE
+	vsv gitea-runner
+	vinstall "${FILESDIR}"/config.yaml 0644 etc/gitea-runner config.yaml
+}

@@ -1,0 +1,9 @@
+#!/bin/sh
+exec 2>&1
+
+export USER=_gitea_runner
+export HOME=/var/lib/gitea_runner
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+cd "${HOME}"
+exec chpst -u _gitea_runner:_gitea_runner gitea-runner daemon --config /etc/gitea-runner/config.yaml

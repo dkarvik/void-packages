@@ -1,0 +1,18 @@
+# gitea-runner configuration (fortmonroe.co.uk).
+# The runner is registered repo-scoped against https://gitea.fortmonroe.co.uk;
+# the registration result lives in /var/lib/gitea_runner/.runner (runner.file is
+# resolved relative to the daemon's working directory, /var/lib/gitea_runner).
+
+log:
+  level: info
+
+runner:
+  file: .runner
+  capacity: 1
+  # Host execution (no docker on this box). The label matches the workflow's
+  # `runs-on: ubuntu-latest`; the :host suffix selects the execution backend.
+  labels:
+    - "ubuntu-latest:host"
+
+host:
+  workdir_parent: /var/lib/gitea_runner/work

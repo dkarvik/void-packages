@@ -31,5 +31,5 @@ post_install() {
 	mv "${DESTDIR}"/usr/bin/runner "${DESTDIR}"/usr/bin/gitea-runner
 	vlicense LICENSE
 	vsv gitea-runner
-	vinstall "${FILESDIR}"/config.yaml 0644 etc/gitea-runner config.yaml
+	vinstall "${FILESDIR}"/gitea-runner/config.yaml 0644 etc/gitea-runner config.yaml
 }

@@ -3,7 +3,7 @@ pkgname=neovim-git
 provides="neovim-${version}_${revision}"
 conflicts="neovim>=0"
 replaces="neovim>=0"
-version=0.12.6.20261013.1
+version=0.12.6.20261014.1
 revision=1
 build_style=cmake
 build_helper="qemu"
@@ -16,12 +16,12 @@ depends="tree-sitter-c tree-sitter-lua tree-sitter-markdown tree-sitter-query
 short_desc="Fork of Vim aiming to improve user experience, plugins and GUIs"
 maintainer="tranzystorekk <tranzystorek.io@protonmail.com>"
 license="Apache-2.0 AND Vim"
-_commit=a054b698c0b7c83e934a38df5c0021ae2cb444cc
+_commit=6edb38ca982c96645185c82c1f5b5cb474487f71
 wrksrc="neovim-${_commit}"
 homepage="https://neovim.io"
 changelog="https://github.com/neovim/neovim/releases"
 distfiles="https://github.com/neovim/neovim/archive/${_commit}.tar.gz"
-checksum=f9b0173526ac8b9af6f960ec31e129a3cf174c33f0d14fd0d8a114760d443295
+checksum=d47bb65c850e0fb2909bcca0d0165fe2f667e49c8c8fd6d152f7cc6205ca9423
 
 build_options="luajit"
 build_options_default="luajit"
